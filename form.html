@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+ <link rel="icon" href="data:,">
+  <meta charset="UTF-8">
+  <title>Formulario de Inventario de Canastillas</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #333;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #4287f5;
+      color: white;
+    }
+    input[type="number"] {
+      width: 80px;
+    }
+    tfoot {
+      font-weight: bold;
+      background-color: #f1f1f1;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Inventario de Canastillas</h2>
+<label>Centro de Operación: <input type="text" id="centroOperacion" /></label><br><br>
+
+<table>
+  <thead>
+    <tr>
+      <th>Código de Canastilla</th>
+      <th>Descripción de Canastilla</th>
+      <th>Existencia</th>
+      <th>Físico</th>
+      <th>Diferencia</th>
+    </tr>
+  </thead>
+  <tbody id="form-body">
+    <!-- Se llena con JS -->
+  </tbody>
+  <tfoot>
+    <tr>
+      <td colspan="2">Total de unidades Canastillas</td>
+      <td id="total-existencia">0</td>
+      <td id="total-fisico">0</td>
+      <td id="total-diferencia">0</td>
+    </tr>
+  </tfoot>
+</table>
+
+<label>Nombre del responsable del inventario: <input type="text" id="responsable" /></label><br><br>
+<button onclick="enviarFormulario()">Enviar</button>
+
+<script>
+const canastillas = [
+  { codigo: "1001", descripcion: "Canastillas Color Negro * 13 Cms. de Altura (Exhibición)" },
+  { codigo: "1002", descripcion: "Canastillas Color Negro (Averías)" },
+  { codigo: "1003", descripcion: "Canastillas Color Azul (Fruver)" },
+  { codigo: "1004", descripcion: "Canastillas Color Verde (Fruver)" },
+  { codigo: "1005", descripcion: "Canastillas Color Amarilla (Panadería, lácteos, arepas)" },
+  { codigo: "1006", descripcion: "Canastillas Color Amarilla (Pollo Quality)" },
+  { codigo: "1008", descripcion: "Canastillas Color Roja (Carnes frescas Quality)" },
+  { codigo: "1010", descripcion: "Canastillas Color Rojo (Big)" }
+];
+
+const tbody = document.getElementById("form-body");
+
+// Generar filas dinámicamente
+canastillas.forEach((item, index) => {
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td>${item.codigo}</td>
+    <td>${item.descripcion}</td>
+    <td><input type="number" value="0" min="0" class="existencia" oninput="actualizar(${index})"></td>
+    <td><input type="number" value="0" min="0" class="fisico" oninput="actualizar(${index})"></td>
+    <td id="diferencia-${index}">0</td>
+  `;
+  tbody.appendChild(row);
+});
+
+// Actualizar diferencia por fila
+function actualizar(index) {
+  const existencia = document.getElementsByClassName("existencia")[index].valueAsNumber || 0;
+  const fisico = document.getElementsByClassName("fisico")[index].valueAsNumber || 0;
+  const diferencia = fisico - existencia;
+  document.getElementById(`diferencia-${index}`).textContent = diferencia;
+  actualizarTotales();
+}
+
+// Totales
+function actualizarTotales() {
+  let totalExistencia = 0;
+  let totalFisico = 0;
+
+  document.querySelectorAll(".existencia").forEach(input => totalExistencia += input.valueAsNumber || 0);
+  document.querySelectorAll(".fisico").forEach(input => totalFisico += input.valueAsNumber || 0);
+
+  document.getElementById("total-existencia").textContent = totalExistencia;
+  document.getElementById("total-fisico").textContent = totalFisico;
+  document.getElementById("total-diferencia").textContent = totalFisico - totalExistencia;
+}
+
+// Envío de formulario
+function enviarFormulario() {
+  const centroOperacion = document.getElementById("centroOperacion").value;
+  //const euro = document.getElementById("euro").value;
+  const responsable = document.getElementById("responsable").value;
+
+  const detalles = Array.from(document.querySelectorAll("#form-body tr")).map((row, index) => {
+    const existencia = document.getElementsByClassName("existencia")[index].value || 0;
+    const fisico = document.getElementsByClassName("fisico")[index].value || 0;
+    const diferencia = fisico - existencia;
+
+    return {
+      codigo: canastillas[index].codigo,
+      descripcion: canastillas[index].descripcion,
+      existencia: parseInt(existencia),
+      fisico: parseInt(fisico),
+      diferencia: parseInt(diferencia)
+    };
+  });
+
+  const datos = {
+    centroOperacion,
+    //euro,
+    responsable,
+    detalles
+  };
+
+  function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("Hoja 1");
+
+    data.detalles.forEach(item => {
+      sheet.appendRow([
+        new Date(),
+        data.centroOperacion,
+        data.responsable,
+        item.codigo,
+        item.descripcion,
+        item.existencia,
+        item.fisico,
+        item.diferencia
+      ]);
+    });
+
+    return ContentService.createTextOutput("Datos guardados correctamente.")
+      .setMimeType(ContentService.MimeType.TEXT);
+  } catch (err) {
+    return ContentService.createTextOutput("Error: " + err.message)
+      .setMimeType(ContentService.MimeType.TEXT);
+  }
+}
+
+  fetch("https://script.google.com/macros/s/AKfycbxVXaCxXc8zsD3P6g2ycfYBlWidT8IydW-diUHQgdEp2X57alR8_SacFLqT0GcLq-lZ/exec", {
+    method: "POST",
+    body: JSON.stringify(datos),
+    headers: {
+      "Content-Type": "application/json"}
+  })
+  .then(res => res.text())
+  .then(msg => {
+    console.log("Respuesta del servidor:", msg);
+    alert("Formulario enviado correctamente.");
+
+    // Limpiar campos de texto
+    document.getElementById("centroOperacion").value = "";
+    document.getElementById("euro").value = "";
+    document.getElementById("responsable").value = "";
+
+    // Limpiar inputs numéricos
+    document.querySelectorAll(".existencia, .fisico").forEach(input => input.value = 0);
+
+    // Reiniciar diferencias
+    canastillas.forEach((_, index) => {
+      document.getElementById(`diferencia-${index}`).textContent = "0";
+    });
+
+    // Reiniciar totales
+    actualizarTotales();
+  })
+  .catch(err => {
+    console.error("Error al enviar:", err);
+    alert("Error al enviar formulario.");
+  });
+}
+</script>
+
+</body>
+</html>
