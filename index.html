@@ -158,7 +158,7 @@ function enviarFormulario() {
       ]);
     });
 
-    return ContentService.createTextOutput("Datos guardados correctamente.")
+    return ContentService.createTextOutput("Datos guardados correctamenteee.")
       .setMimeType(ContentService.MimeType.TEXT);
   } catch (err) {
     return ContentService.createTextOutput("Error: " + err.message)
@@ -166,7 +166,7 @@ function enviarFormulario() {
   }
 }
 
-  fetch("https://script.google.com/macros/s/AKfycbxVXaCxXc8zsD3P6g2ycfYBlWidT8IydW-diUHQgdEp2X57alR8_SacFLqT0GcLq-lZ/exec", {
+  fetch("https://script.google.com/macros/s/AKfycbzwFTouvlA-vdVcmh3P9t4Rim4x7wwPVy58HFo2VF06Rq5HKr0YTtfU4FnwBzH6wmr7/exec", {
     method: "POST",
     body: JSON.stringify(datos),
     headers: {
@@ -177,15 +177,15 @@ function enviarFormulario() {
     console.log("Respuesta del servidor:", msg);
     alert("Formulario enviado correctamente.");
 
-    // Limpiar campos de texto
+    // Limpiar campos de texxto
     document.getElementById("centroOperacion").value = "";
     document.getElementById("euro").value = "";
     document.getElementById("responsable").value = "";
 
-    // Limpiar inputs numéricos
+    // Limpiar inputs numéricoss
     document.querySelectorAll(".existencia, .fisico").forEach(input => input.value = 0);
 
-    // Reiniciar diferencias
+    // Reiniciar diferenciass
     canastillas.forEach((_, index) => {
       document.getElementById(`diferencia-${index}`).textContent = "0";
     });
